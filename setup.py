@@ -44,5 +44,7 @@ Pilot command-line interface utilities""",
               'pilot-delegation-update=pilot.cli.delegation:update',
               'pilot-delegation-destroy=pilot.cli.delegation:destroy',
               ],
-         }
+         },
+      tests_require = ["mock", "nose"],
+      test_suite="nose.collector",
       )
