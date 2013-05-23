@@ -5,9 +5,9 @@ import os
 import pytz
 import sys
 
-from pilot_cli.common import exit_codes
-from pilot_cli.api import errmsg, setup_app, json_loads, isoformat, PilotError
-from pilot_cli import proxylib
+from .common import exit_codes
+from .api import errmsg, setup_app, json_loads, isoformat, PilotError
+from . import proxylib
 
 def list():
     options, args, log, svc = setup_app(

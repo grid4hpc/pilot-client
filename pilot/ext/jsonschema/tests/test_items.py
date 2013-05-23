@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 
-from pilot_cli.ext import jsonschema
+from ... import jsonschema
 
 class TestItems(TestCase):
   

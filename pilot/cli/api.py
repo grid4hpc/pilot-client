@@ -35,7 +35,7 @@ from common import exit_codes
 from httplib2m2 import Http, HttpLib2ErrorWithResponse
 import proxylib
 
-log = logging.getLogger("pilot_cli.api")
+log = logging.getLogger("pilot.cli.api")
 _date_iso_fmt_re = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{2,6})?Z$')
 
 def isoformat(dts):
@@ -185,7 +185,7 @@ class PilotService(object):
         send_headers = {}
         if headers:
             send_headers.update(headers)
-        send_headers.update({"user-agent": "pilot_cli-%s" % self.cli_version(),
+        send_headers.update({"user-agent": "pilot-client-%s" % self.cli_version(),
                              "connection": "close"})
         if data:
             if isinstance(data, unicode):
@@ -266,7 +266,7 @@ class PilotService(object):
         if not self._cli_version:
             try:
                 from pkg_resources import get_distribution
-                self._cli_version = get_distribution('pilot_cli').version
+                self._cli_version = get_distribution('pilot-client').version
             except ImportError:
                 self._cli_version = 'UNKNOWN'
         return self._cli_version

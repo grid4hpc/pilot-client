@@ -70,7 +70,7 @@ Running from the command line
 #      encoding using the "python -m<modulename>" format.
 #TODO: Support encodings other than utf-8
 
-from pilot_cli.ext.jsonschema.validator import JSONSchemaValidator
+from .validator import JSONSchemaValidator
 
 __all__ = [ 'validate', 'JSONSchemaValidator' ]
 __version__ = '0.1a'

@@ -1,14 +1,14 @@
 import math
 from unittest import TestCase
 
-from pilot_cli.ext import jsonschema
+from ... import jsonschema
 
-class TestTitle(TestCase):
+class TestDescription(TestCase):
   
-  schema = { "title":"My Title for My Schema" }
-  schema2 = { "title": 1233 }
+  schema = { "description":"My Description for My Schema" }
+  schema2 = { "description": 1233 }
   
-  def test_title_pass(self):
+  def test_description_pass(self):
     
     #It shouldn't matter what this data is
     data = "whatever"
@@ -18,7 +18,7 @@ class TestTitle(TestCase):
     except ValueError, e:
       self.fail("Unexpected failure: %s" % e)
   
-  def test_title_fail(self):
+  def test_description_fail(self):
     
     #It shouldn't matter what this data is
     data = "whatever"

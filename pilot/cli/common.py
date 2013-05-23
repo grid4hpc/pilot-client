@@ -4,7 +4,7 @@ import logging
 import optparse
 import os
 
-from pilot_cli.ext import enum
+from ..ext import enum
 import proxylib
 
 def default_option_parser():
@@ -17,7 +17,7 @@ def default_option_parser():
     """
     try:
         from pkg_resources import get_distribution
-        pkg_version = get_distribution('pilot_cli').version
+        pkg_version = get_distribution('pilot-client').version
     except ImportError:
         pkg_version = 'UNKNOWN'
     parser = optparse.OptionParser(usage="%prog [options] ...", version="%prog " + pkg_version)

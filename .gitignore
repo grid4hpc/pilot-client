@@ -1,7 +1,7 @@
 *~
 *.pyc
 *.pyo
-/pilot_cli.egg-info
+/pilot_client.egg-info
 /pip-log.txt
 /cli-debug-env
 /ext_dist
@@ -12,3 +12,4 @@
 /*.rpm
 /version
 /.ropeproject
+/env

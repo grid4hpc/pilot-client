@@ -3,8 +3,8 @@
 import sys
 import datetime
 
-from pilot_cli.api import setup_app, json_loads
-from pilot_cli.common import exit_codes
+from .api import setup_app, json_loads
+from .common import exit_codes
 
 def format_dates(o, seen=None):
     if seen is None:

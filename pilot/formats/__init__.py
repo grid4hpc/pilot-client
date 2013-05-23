@@ -1,16 +1,16 @@
 # -*- encoding: utf-8 -*-
 
 import copy
+import json
 import os
-import simplejson
-from pilot_cli.ext import jsonschema
+from pilot.ext import jsonschema
 
 from pkg_resources import resource_stream
 from cStringIO import StringIO
 import re
 
 def _pkg_resources_loader(name):
-    return resource_stream('pilot_cli', 'schema/%s.js' % name)
+    return resource_stream('pilot.formats', 'schema/%s.js' % name)
 
 class _schema:
     def __init__(self, loader=None):
@@ -20,7 +20,7 @@ class _schema:
     def __getattr__(self, attr):
         try:
             if attr not in self._schemas:
-                self._schemas[attr] = simplejson.load(self.loader(attr))
+                self._schemas[attr] = json.load(self.loader(attr))
             return self._schemas[attr]
         except:
             raise AttributeError("no such schema: %s" % attr)
@@ -31,7 +31,7 @@ def job_load(stream):
     u"""Загрузить задание из открытого файла
 
     @param stream: file-like object with job definition"""
-    data = simplejson.load(stream)
+    data = json.load(stream)
     job_validate(data)
     return data
 
@@ -45,7 +45,7 @@ def task_load(stream):
     u"""Загрузить задачу из открытого файла
 
     @param stream: file-like object with task definition"""
-    data = simplejson.load(stream)
+    data = json.load(stream)
     task_validate(data)
     return data
 

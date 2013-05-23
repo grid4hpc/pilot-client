@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
-from pilot_cli import formats
-from pilot_cli import tests
+from ... import formats
+from .. import tests
 
 job_wrong_version = """
 { "version": 100,

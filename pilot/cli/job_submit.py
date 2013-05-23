@@ -3,9 +3,9 @@
 import sys
 import uuid
 
-from pilot_cli.formats import job_from_file, add_software
-from pilot_cli.common import exit_codes
-from pilot_cli.api import errmsg, setup_app, json_dumps, json_loads, PilotError, UnsupportedProtocolError
+from ..formats import job_from_file, add_software
+from .common import exit_codes
+from .api import errmsg, setup_app, json_dumps, json_loads, PilotError, UnsupportedProtocolError
 
 def main():
     options, args, log, svc = setup_app(

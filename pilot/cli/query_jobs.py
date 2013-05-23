@@ -2,8 +2,8 @@
 
 import sys
 
-from pilot_cli.api import setup_app, json_loads
-from pilot_cli.common import exit_codes
+from .api import setup_app, json_loads
+from .common import exit_codes
 
 def main():
     _, _, _, svc = setup_app(

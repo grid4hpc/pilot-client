@@ -5,23 +5,23 @@
 
 from unittest import TestCase
 
-from pilot_cli.ext import jsonschema
+from ... import jsonschema
 
-class TestMaximum(TestCase):
+class TestMinimum(TestCase):
   
   props = {
-    "prop01": { "type":"number",  "maximum":10 },
-    "prop02": { "type":"integer", "maximum":20 }
+    "prop01": { "type":"number",  "minimum":10 },
+    "prop02": { "type":"integer", "minimum":20 }
   }
   schema = {"type": "object", "properties":props}
   
   
-  def test_maximum_pass(self):
+  def test_minimum_pass(self):
     
-    #Test less than
+    #Test greater than
     data1 = {
-      "prop01": 5,
-      "prop02": 10
+      "prop01": 21,
+      "prop02": 21
     }
     
     #Test equal
@@ -36,18 +36,18 @@ class TestMaximum(TestCase):
     except ValueError, e:
       self.fail("Unexpected failure: %s" % e)
   
-  def test_maximum_fail(self):
+  def test_minumum_fail(self):
     
     #Test number
     data1 = {
-      "prop01": 11,
-      "prop02": 19
+      "prop01": 9,
+      "prop02": 21
     }
     
     #Test integer
     data2 = {
-      "prop01": 9,
-      "prop02": 21
+      "prop01": 10,
+      "prop02": 19
     }
     
     try:

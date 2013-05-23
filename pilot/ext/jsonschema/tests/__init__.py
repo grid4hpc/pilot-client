@@ -7,7 +7,7 @@ import unittest
 import doctest
 
 def additional_tests():
-    from pilot_cli.ext import jsonschema
+    from ... import jsonschema
     suite = unittest.TestSuite()
     suite.addTest(doctest.DocTestSuite(jsonschema))
     return suite

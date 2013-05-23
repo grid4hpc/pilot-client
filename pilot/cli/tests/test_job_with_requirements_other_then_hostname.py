@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
-from pilot_cli import formats
-from pilot_cli import tests
+from ... import formats
+from .. import tests
 
 job_wrong = """
 { "version": 2,
@@ -24,6 +24,6 @@ def test_fail():
     try:
         formats.job_loads(job_wrong)
     except ValueError, e:
-        assert str(e) == "Additional properties not defined by 'properties' are not allowed in field '_data'"
+        assert str(e) == "Additional property 'foo' not defined by 'properties' is not allowed in field '_data'"
     else:
         raise ValueError("expected failure for job_wrong")

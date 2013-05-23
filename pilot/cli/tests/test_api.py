@@ -1,20 +1,24 @@
-from pilot_cli import api
+from ...cli import api
+from ...cli import proxylib
 import datetime
 import pytz
+import os
 
-from mock import Mock, patch, patch_object
+from mock import Mock
 
-TEST_PILOT = 'https://abbot.homeunix.net:5053/jobs/'
+TEST_PILOT = os.environ.get("PILOT_SERVER", 'https://abbot.homeunix.net:5053/jobs/')
 
-class TestObj(object):
-    def __repr__(self):
-        return "<TestObj>"
-
+class TestOptions:
+    capath="/etc/grid-security/certificates"
+    use_proxy=True
+    proxy=proxylib.get_proxy_filename()
+    
 def test_JSONEncoder():
     assert api.json_dumps('hello') == '"hello"'
-    assert api.json_dumps(dict(foo='bar', qux=datetime.datetime(2009, 1, 9, 14, 15, 16))) == '{"qux": "2009-01-09T11:15:16.000000Z", "foo": "bar"}'
+    tz = pytz.tzfile.build_tzinfo("local", open("/etc/localtime"))
+    assert api.json_dumps(dict(foo='bar', qux=tz.localize(datetime.datetime(2009, 1, 9, 14, 15, 16)))) == '{"qux": "2009-01-09T14:15:16.000000Z", "foo": "bar"}'
     assert api.json_dumps(dict(foo='bar', qux=datetime.datetime(2009, 1, 9, 14, 15, 16, tzinfo=pytz.utc))) == '{"qux": "2009-01-09T14:15:16.000000Z", "foo": "bar"}'
-    assert api.json_dumps(dict(foo='bar', qux=datetime.datetime(2009, 1, 9, 14, 15, 16, 123))) == '{"qux": "2009-01-09T11:15:16.000123Z", "foo": "bar"}'
+    assert api.json_dumps(dict(foo='bar', qux=tz.localize(datetime.datetime(2009, 1, 9, 14, 15, 16, 123)))) == '{"qux": "2009-01-09T14:15:16.000123Z", "foo": "bar"}'
     assert api.json_dumps(dict(foo='bar', qux=datetime.datetime(2009, 1, 9, 14, 15, 16, 123, tzinfo=pytz.utc))) == '{"qux": "2009-01-09T14:15:16.000123Z", "foo": "bar"}'
     assert api.json_dumps(dict(x=[dict(foo="bar")])) == '{"x": [{"foo": "bar"}]}'
 
@@ -32,39 +36,5 @@ def test_JSONDecoder():
 
 
 def test_PilotService_constructor():
-    srv = api.PilotService(TEST_PILOT, TestObj())
+    srv = api.PilotService(TEST_PILOT, api.build_ssl_ctx(TestOptions()))
     assert srv.baseurl == TEST_PILOT
-    assert isinstance(srv.options, TestObj)
-
-def test_PilotService_helper_methods():
-    srv = api.PilotService(TEST_PILOT, TestObj())
-    do_request = Mock()
-    srv.do_request = do_request
-    srv.get('')
-    args, kwargs = do_request.call_args
-    req = args[0]
-    assert req.get_full_url() == TEST_PILOT
-    assert req.get_method() == 'GET'
-
-    srv.delete('1')
-    args, kwargs = do_request.call_args
-    req = args[0]
-    assert req.get_full_url() == TEST_PILOT + '1'
-    assert req.get_method() == 'DELETE'
-    
-    srv.post('2', 'hello')
-    args, kwargs = do_request.call_args
-    req = args[0]
-    assert req.get_full_url() == TEST_PILOT + '2'
-    assert req.get_method() == 'POST'
-    assert req.headers['Content-length'] == '5'
-    assert req.headers['Content-md5'] == 'XUFAKrxLKna5cZ2REBfFkg=='
-    
-    srv.put('2', 'hello')
-    args, kwargs = do_request.call_args
-    req = args[0]
-    assert req.get_full_url() == TEST_PILOT + '2'
-    assert req.get_method() == 'PUT'
-    assert req.headers['Content-length'] == '5'
-    assert req.headers['Content-md5'] == 'XUFAKrxLKna5cZ2REBfFkg=='
-    
