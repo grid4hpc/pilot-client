@@ -13,13 +13,13 @@ def main():
         logname = "pilot-uri-helper")
 
     uri = args[0]
-    response, data = svc.get(uri)
+    resp = svc.get(uri)
     json_contenttypes = ['application/json', 'text/javascript']
-    if response['content-type'] not in json_contenttypes and options.json:
+    if resp.headers['content-type'] not in json_contenttypes and options.json:
         errmsg("Server did not return JSON output.")
         log.debug("Server did not return JSON output.")
         sys.exit(exit_codes.content_error)
-    sys.stdout.write(data)
+    sys.stdout.write(resp.body)
     sys.exit(exit_codes.success)
 
 if __name__ == '__main__':
