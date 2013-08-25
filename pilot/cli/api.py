@@ -2,6 +2,7 @@
 
 import codecs
 import datetime
+import functools
 import inspect
 import getpass
 import httplib
