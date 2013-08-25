@@ -16,25 +16,20 @@ import socket
 import sys
 import time
 import traceback
-from urlparse import urljoin
-
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
 
 try:
     import json
 except ImportError:
     import simplejson as json
 
-from M2Crypto import SSL, RSA, EVP, BIO, X509
+from M2Crypto import SSL, RSA, EVP, BIO, X509, httpslib
 
+import http
 import common
 from common import exit_codes
-from httplib2m2 import Http, HttpLib2ErrorWithResponse
 import proxylib
 
+debug = True
 log = logging.getLogger("pilot.cli.api")
 _date_iso_fmt_re = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{2,6})?Z$')
 
@@ -111,34 +106,34 @@ def json_loads(*args, **kwargs):
     convert_dates(result)
     return result
 
-def handle_http_errors((response, content), uri):
+def handle_http_errors(response):
     if response.status == 401:
-        errmsg("You have no access to resource %s", uri)
-        log.debug("HTTP Error %d: %s", response.status, content.strip())
+        errmsg("You have no access to resource %s", response.url)
+        log.debug("HTTP Error %d: %s", response.status, response.body.strip())
         sys.exit(exit_codes.access_denied)
     elif response.status == 404:
-        msg = "The specified URI (%s) could not be found" % uri
-        if 'x-pilot-error-message' in response:
-            msg += ": " + response['x-pilot-error-message']
+        msg = "The specified URI (%s) could not be found" % response.url
+        if 'x-pilot-error-message' in response.headers:
+            msg += ": " + response.headers['x-pilot-error-message']
         else:
-            msg += ":\n" + content.strip()
+            msg += ":\n" + response.body.strip()
         errmsg(msg)
-        log.debug("HTTP Error %d: %s", response.status, content.strip())
+        log.debug("HTTP Error %d: %s", response.status, response.body.strip())
         sys.exit(exit_codes.not_found)
     elif response.status == 408:
         errmsg("HTTP Error 408: Request timed out")
-        log.debug("HTTP Error %d: %s", response.status, content.strip())
+        log.debug("HTTP Error %d: %s", response.status, response.body.strip())
         sys.exit(exit_codes.request_timed_out)
     elif 500 <= response.status < 600:
-        errmsg("Server Error %d: %s", response.status, content.strip())
-        log.debug("HTTP Error %d: %s", response.status, content.strip())
+        errmsg("Server Error %d: %s", response.status, response.body.strip())
+        log.debug("HTTP Error %d: %s", response.status, response.body.strip())
         sys.exit(exit_codes.internal_server_error)
     elif 400 <= response.status < 500:
-        errmsg("Request Error: %s (HTTP status code %d)", content.strip(), response.status)
-        log.debug("HTTP Error %d: %s", response.status, content.strip())
+        errmsg("Request Error: %s (HTTP status code %d)", response.body.strip(), response.status)
+        log.debug("HTTP Error %d: %s", response.status, response.body.strip())
         sys.exit(exit_codes.bad_usage)
 
-    return response, content
+    return response
 
 
 class PilotError(RuntimeError):
@@ -161,106 +156,52 @@ class PilotService(object):
         self.retries = retries
         self._cli_version = None
 
-        http = Http()
-        http.add_ssl_context(ssl_ctx)
-        http.follow_all_redirects = True
-        
-        self.http = http
+        self.ssl_ctx = ssl_ctx
+        # FIXME: timeout must be configurable
+        self.http = http.HTTP(baseurl, ssl_context=ssl_ctx, retries=retries, timeout=30)
 
-    def do_request(self, request):
+    def request(self, method, uri, headers=None, data=None):
         try:
-            self.validate_response(data, headers)
-            return data, headers
-        except IOError, e:
-            print >> sys.stderr, str(e)
-            sys.exit(exit_codes.content_error)
-
-    def request(self, relpath, method="GET", data=None, mimetype="application/json", headers=None):
-        uri = urljoin(self.baseurl, relpath)
-        if not uri.startswith('http'):
-            log.debug("Bad request URI: %s", uri)
-            errmsg("Pilot server address is not specified. Either set PILOT_SERVER environment variable or use --url option.")
-            sys.exit(exit_codes.server_unspecified)
-
-        send_headers = {}
-        if headers:
-            send_headers.update(headers)
-        send_headers.update({"user-agent": "pilot-client-%s" % self.cli_version(),
-                             "connection": "close"})
-        if data:
-            if isinstance(data, unicode):
-                data = data.encode("utf-8")
-            send_headers.update({"content-type": mimetype,
-                                 "content-length": str(len(data)),
-                                 "content-md5": md5(data).digest().encode("base64")})
-        else:
-            send_headers["content-length"] = "0"
-
-        try:
-            log.debug("Sending %s to %s", method, uri)
-            attempt = 0
-            while attempt < self.retries:
-                try:
-                    attempt += 1
-                    response, content = self.http.request(uri, method, body=data, headers=send_headers)
-                    break
-                except httplib.BadStatusLine:
-                    log.debug("Attempt %d failed", attempt)
-                    if attempt < self.retries:
-                        continue
-                    else:
-                        raise
-            log.debug("Response literal contents:\n%s", content)
-
-            errors = []
-            if ('content-length' in response) and (len(content) != int(response['content-length'])):
-                errors.append("Conent-Length does not match response length.")
-            if ('content-md5' in response) and (md5(content).digest() != response['content-md5'].decode('base64')):
-                errors.append("Content-MD5 does not match response checksum.")
-
-            if len(errors) > 0:
-                errmsg("Server response contains errors:")
-                for error in errors:
-                    errmsg(" * %s", error)
-                sys.exit(exit_codes.content_error)                
-                
-            return response, content
+            return handle_http_errors(self.http.request(method, uri, headers, data))
+        except httplib.BadStatusLine:
+            errmsg("Bad response from server.")
         except SSL.Checker.SSLVerificationError, exc:
-            errmsg("SSL Verification Error: %s", str(exc))
+            errmsg("SSL Verification Error: {0}".format(exc))
             sys.exit(exit_codes.bad_certificate)
         except SSL.SSLError, exc:
-            errmsg("SSL Error: %s", str(exc))
+            errmsg("SSL Error: {0}".format(exc))
             sys.exit(exit_codes.ssl_error)
         except socket.timeout, exc:
-            errmsg("Socket timeout: %s (%d)", exc.args[1], exc.args[0])
+            errmsg("Socket timeout: {1} ({0})".format(exc.args))
             sys.exit(exit_codes.connection_timed_out)            
         except socket.error, exc:
-            errmsg("Socket error: %s (%d)", exc.args[1], exc.args[0])
+            errmsg("Socket error: {1} ({0})".format(exc.args))
             sys.exit(exit_codes.connection_error)
-        except HttpLib2ErrorWithResponse, exc:
-            errmsg("Error getting response from server: %s", str(exc))
-            sys.exit(exit_codes.content_error)
         except SystemExit, exc:
             raise
         except Exception, exc:
-            errmsg("Unknown error while making HTTP request: %s (type: %s)", str(exc), type(exc).__name__)
+            errmsg("Unknown error while making HTTP request: {0} (type: {1})".format(
+                exc, type(exc).__name__))
             log.debug("Uncaught exception:\n%s", traceback.format_exc())
+            if debug:
+                raise
             sys.exit(exit_codes.content_error)
 
-    def get(self, relpath, headers=None):
-        return handle_http_errors(self.request(relpath, headers=headers), relpath)
 
-    def delete(self, relpath):
-        return handle_http_errors(self.request(relpath, method="DELETE"), relpath)
+    class _verb(object):
+        def __init__(self, name):
+            self.name = name
 
-    def post(self, relpath, data, mimetype="application/json"):
-        return handle_http_errors(self.request(relpath, method="POST", data=data, mimetype=mimetype), relpath)
+        def __get__(self, object, type=None):
+            return functools.partial(object.request, self.name)
 
-    def put(self, relpath, data, mimetype="application/json"):
-        return handle_http_errors(self.request(relpath, method="PUT", data=data, mimetype=mimetype), relpath)
+    get = _verb("GET")
+    put = _verb("PUT")
+    delete = _verb("DELETE")
+    post = _verb("POST")
 
     def server_version(self):
-        return self.get("/version")[1]
+        return self.get("/version").body
 
     def cli_version(self):
         if not self._cli_version:

@@ -1,8 +1,10 @@
 from ...cli import api
 from ...cli import proxylib
+from ...cli import http
 import datetime
 import pytz
 import os
+from unittest import TestCase
 
 from mock import Mock
 
@@ -38,3 +40,10 @@ def test_JSONDecoder():
 def test_PilotService_constructor():
     srv = api.PilotService(TEST_PILOT, api.build_ssl_ctx(TestOptions()))
     assert srv.baseurl == TEST_PILOT
+
+class test_handle_http_errors(TestCase):
+    def test_errors(self):
+        for code in range(400, 409):
+            self.assertRaises(SystemExit, api.handle_http_errors, http.Response(code, {}, "", "http://example.com"))
+        for code in range(500, 515):
+            self.assertRaises(SystemExit, api.handle_http_errors, http.Response(code, {}, "", "http://example.com"))
