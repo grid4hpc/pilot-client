@@ -13,7 +13,7 @@ def main():
         argstest = lambda args: len(args) == 0,
         logname = "pilot-query-jobs")
 
-    data = svc.get("/jobs")[1]
+    data = svc.get("/jobs").body
     for job in json_loads(data):
         print job['uri']
     sys.exit(exit_codes.success)
