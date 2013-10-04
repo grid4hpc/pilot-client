@@ -42,20 +42,20 @@ def main():
         "delegation_id": options.delegation_id,
     }
 
-    response, content = svc.post("/jobs", json_dumps(request))
+    response = svc.post("/jobs", data=json_dumps(request))
     try:
-        job_uri = response['location']
+        job_uri = response.headers['location']
     except KeyError, exc:
-        job_uri = json_loads(content)[0]['uri']
+        job_uri = json_loads(response.body)[0]['uri']
 
     job_id = job_uri.strip("/").split("/")[-1]
     try:
-        response, content = svc.get('/v2/jobs/%s/RSL' % job_id)
+        response = svc.get('/v2/jobs/%s/RSL' % job_id)
         if options.json:
-            print content
+            print response.body
             sys.exit(exit_codes.success)
 
-        info = json_loads(content)
+        info = json_loads(response.body)
         output = []
         for task_id in sorted(info.keys()):
             task_lines = []

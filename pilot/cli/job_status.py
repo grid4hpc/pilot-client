@@ -15,8 +15,8 @@ def main():
         logname = "pilot-job-status")
 
     job_uri = args[0]
-    _, content = svc.get(job_uri)
-    info = json_loads(content)
+    resp = svc.get(job_uri)
+    info = json_loads(resp.body)
     log.debug("job status (raw):\n%s", info)
 
     states = info['state']
@@ -24,7 +24,7 @@ def main():
     state = states[0]
 
     if options.json:
-        print content
+        print resp.body
         sys.exit(exit_codes.success)
 
     if options.quiet:

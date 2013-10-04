@@ -18,16 +18,16 @@ def list():
         argstest=lambda args: len(args) == 0,
         logname="pilot-delegation-list")
 
-    _, content = svc.get("/delegations")
+    resp = svc.get("/delegations")
     if options.json:
-        print content
+        print resp.body
         sys.exit(exit_codes.success)
 
     fmt = "%-20s|%-15s|%s"
     if not (options.quiet or options.verbose):
         print fmt % ("Name", "VO", "Expires")
         print "-"*75
-    for delegation in json_loads(content):
+    for delegation in json_loads(resp.body):
         if delegation['next_expiration'] is None:
             delegation['next_expiration'] = datetime.datetime.fromtimestamp(0, pytz.UTC)
         if options.quiet:
@@ -140,7 +140,7 @@ def destroy():
     if len(args) == 1:
         options.delegation_id = args[0]
 
-    response, content = svc.delete("/delegations/%s" % options.delegation_id)
+    response = svc.delete("/delegations/%s" % options.delegation_id)
     if response.status != 204:
         errmsg("Failed to delete delegation: %s (HTTP Code %d)", content, response.status)
         sys.exit(exit_codes.delegation_error)

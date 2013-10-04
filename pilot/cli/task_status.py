@@ -15,8 +15,8 @@ def main():
         logname = "pilot-task-status")
 
     task_uri = args[0]
-    _, content = svc.get(task_uri)
-    info = json_loads(content)
+    resp = svc.get(task_uri)
+    info = json_loads(resp.body)
     log.debug("task status (raw):\n%s", info)
 
     states = info['state']
@@ -24,7 +24,7 @@ def main():
     state = states[0]
 
     if options.json:
-        print content
+        print resp.body
         sys.exit(exit_codes.success)
 
     exit_code = info.get('exit_code', None)

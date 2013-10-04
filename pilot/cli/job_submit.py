@@ -42,7 +42,7 @@ def main():
             "definition": definition,
             "delegation_id": options.delegation_id,
         }
-        response, content = svc.post("/jobs", json_dumps(request))
+        response = svc.post("/jobs", data=json_dumps(request))
     else:
         try:
             request = {
@@ -52,18 +52,18 @@ def main():
         except IOError, exc:
             errmsg("Failed to load proxy certificate %s: %s", options.proxy, str(exc))
             sys.exit(exit_codes.proxy_error)
-        response, content = svc.post("/jobs/", json_dumps(request))
+        response = svc.post("/jobs/", json_dumps(request))
 
     try:
-        job_uri = response['location']
+        job_uri = response.headers['location']
     except KeyError, exc:
-        job_uri = json_loads(content)[0]['uri']
+        job_uri = json_loads(response.body)[0]['uri']
 
     log.debug("New job URI: %s", job_uri)
 
     request = { "operation": { "op": "start",
                                "id": str(uuid.uuid4()) } }
-    response, content = svc.put(job_uri, json_dumps(request))
+    response = svc.put(job_uri, data=json_dumps(request))
 
     if not options.quiet:
         print "Job was successfully submitted to Pilot service."

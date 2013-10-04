@@ -162,6 +162,8 @@ class PilotService(object):
         self.http = http.HTTP(baseurl, ssl_context=ssl_ctx, retries=retries, timeout=30)
 
     def request(self, method, uri, headers=None, data=None):
+        if isinstance(data, unicode):
+            data = data.encode('utf-8')
         try:
             return handle_http_errors(self.http.request(method, uri, headers, data))
         except httplib.BadStatusLine:
@@ -214,12 +216,12 @@ class PilotService(object):
         return self._cli_version
 
     def refresh_delegation(self, delegation_id, proxy_filename):
-        response, content = self.request("/delegations/%s" % delegation_id)
+        response = self.get("/delegations/%s" % delegation_id)
         if response.status == 404:
             self.update_delegation(delegation_id)
             next_expiration = None
         else:
-            info = json_loads(content)
+            info = json_loads(response.body)
             next_expiration = info.get("next_expiration")
 
         key, chain = proxylib.load_proxy(open(proxy_filename).read())
@@ -239,20 +241,20 @@ class PilotService(object):
         data = {"renewable": renewable,
                 "myproxy_server": myproxy_server,
                 "credname": credname}
-        response, content = self.request("/delegations/%s" % delegation_id,
-                                         method="PUT", data=json_dumps(data))
+        response = self.put("/delegations/%s" % delegation_id,
+                            data=json_dumps(data))
         if response.status >= 400:
             if response.status == 404:
                 raise UnsupportedProtocolError("Delegation creation is not supported.")
             raise PilotError("Failed to create delegation %s: %s (%d)" % (
-                delegation_id, content, response.status))
+                delegation_id, response.body, response.status))
 
     def renew_delegation(self, delegation_id, key, chain):
-        response, content = self.request("/delegations/%s/pubkey" % delegation_id,
-                                         headers={"accept": "application/x-pkcs1+pem"})
+        response = self.get("/delegations/%s/pubkey" % delegation_id,
+                            headers={"accept": "application/x-pkcs1+pem"})
         if response.status != 200:
             raise PilotError("Failed to fetch delegation renew public key for delegation %s" % delegation_id)
-        new_key = RSA.load_pub_key_bio(BIO.MemoryBuffer(content))
+        new_key = RSA.load_pub_key_bio(BIO.MemoryBuffer(response.body))
         new_pkey = EVP.PKey()
         new_pkey.assign_rsa(new_key)
         new_proxy = proxylib.generate_proxycert(new_pkey, chain[0], key, full=True)
@@ -261,11 +263,11 @@ class PilotService(object):
         new_stack.push(new_proxy)
         for cert in chain:
             new_stack.push(cert)
-        response, content = self.request("/delegations/%s/renew" % delegation_id, method="PUT",
-                                         data=new_stack.as_der(),
-                                         mimetype="application/x-pkix-chain+der")
+        response = self.put("/delegations/%s/renew" % delegation_id,
+                            data=new_stack.as_der(),
+                            headers={"content-type": "application/x-pkix-chain+der"})
         if response.status != 204:
-            raise PilotError("Failed to update delegation %s: %s" % (delegation_id, content))
+            raise PilotError("Failed to update delegation %s: %s" % (delegation_id, response.body))
 
 def errmsg(*args, **kwargs):
     if len(args) == 1:
