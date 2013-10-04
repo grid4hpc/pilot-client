@@ -173,10 +173,10 @@ class PilotService(object):
             errmsg("SSL Error: {0}".format(exc))
             sys.exit(exit_codes.ssl_error)
         except socket.timeout, exc:
-            errmsg("Socket timeout: {1} ({0})".format(exc.args))
+            errmsg("Socket timeout: {1} ({0})".format(*exc.args))
             sys.exit(exit_codes.connection_timed_out)            
         except socket.error, exc:
-            errmsg("Socket error: {1} ({0})".format(exc.args))
+            errmsg("Socket error: {1} ({0})".format(*exc.args))
             sys.exit(exit_codes.connection_error)
         except SystemExit, exc:
             raise
