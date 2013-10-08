@@ -68,6 +68,9 @@ def default_option_parser():
     group.add_option("-d", "--debug", type="int", metavar="N",
                      help="Debug level. Available levels are: fatals (0), errors (1), warnings (2), info messages (3), debug messages (4). Default: %default",
                       dest="debug_level", default=1)
+    group.add_option("--connection-debug", action="store_true", 
+                     dest="connection_debug", default=False,
+                     help="Turn on HTTP connection debug logging. (default: off)")
     group.add_option("-r", "--retry", type="int", metavar="N",
                      help="Number of request retries in case of network failures. Default: %default",
                      dest="retries", default=3)

@@ -147,7 +147,7 @@ class UnsupportedProtocolError(PilotError):
     pass
 
 class PilotService(object):
-    def __init__(self, baseurl, ssl_ctx, retries=1):
+    def __init__(self, baseurl, ssl_ctx, retries=1, connection_debug=False):
         """
         baseurl - корневой URL для всех запросов pilot
         ssl_ctx - инициализированный SSL.Context со всеми сертификатами и т.п.
@@ -159,7 +159,8 @@ class PilotService(object):
 
         self.ssl_ctx = ssl_ctx
         # FIXME: timeout must be configurable
-        self.http = http.HTTP(baseurl, ssl_context=ssl_ctx, retries=retries, timeout=30)
+        self.http = http.HTTP(baseurl, ssl_context=ssl_ctx, retries=retries, timeout=30,
+                              connection_debug=connection_debug)
 
     def request(self, method, uri, headers=None, data=None):
         if isinstance(data, unicode):
@@ -389,7 +390,7 @@ def setup_app(usage="%prog [options] ...",
     common.finalize_options(options)
 
     service = PilotService(options.pilot_url, build_ssl_ctx(options),
-                           options.retries)
+                           options.retries, options.connection_debug)
 
     if options.timeout is not None:
         signal.signal(signal.SIGALRM, sigalrm_handler)

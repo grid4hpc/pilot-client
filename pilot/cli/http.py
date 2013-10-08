@@ -25,12 +25,13 @@ class HTTP(object):
     # FIXME: insert package version into default UA string
     def __init__(self, base_url="", ssl_context=None,
                  ua="pilot-client", timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
-                 retries=1):
+                 retries=1, connection_debug=False):
         self.base_url = urlparse(base_url)
         self.ssl_context = ssl_context
         self.ua = ua
         self.timeout = timeout
         self.retries = retries
+        self.connection_debug = connection_debug
 
     def _actual_uri(self, uri):
         parts = list(urlparse(uri))
@@ -85,8 +86,13 @@ class HTTP(object):
             try:
                 conn = self._make_connection(p_uri)
                 conn.request(method, p_uri.path, body, headers)
+                if self.connection_debug:
+                    conn.set_debuglevel(255)
                 response = conn.getresponse()
                 data = response.read()
+                if self.connection_debug:
+                    print "Response data:"
+                    print data
                 return Response(response.status, dict(response.getheaders()), data, p_uri.geturl())
             except Exception, exc:
                 if type(exc) in self.nonfatal_exceptions:
